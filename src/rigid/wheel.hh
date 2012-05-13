@@ -2,24 +2,21 @@
 #define RAY_WHEEL_HPP
 
 #include "types.hh"
-#include "render_object.hh"
-#include "glut_utils.hh"
 
 class Physics;
 class Object;
 
 class Wheel{
 public:
-  Wheel(Object* parent, 
-            Physics * physics,
-            const coord & pos, 
-            const vec3d & axis_up,
-            double spring,  // force per suspension offset
-            double travel,  // suspension travel upwards
-            double inertia,
-            double radius,
-            double friction,
-            double damping);
+  Wheel(Object* parent, Physics* physics,
+        coord pos,
+        coord axis_up, 
+        double spring,  // force per suspension offset
+        double travel,  // suspension travel upwards
+        double inertia,
+        double radius,
+        double friction,
+        double damping);
   
   bool get_on_floor() const {return m_last_on_floor;}
 
@@ -28,7 +25,6 @@ public:
   bool add_forces(double dt);
 
   void update(double dt);
-
   void reset();
 
   double get_steer() const {return m_steer_angle;}
@@ -44,8 +40,8 @@ public:
 private:
   void draw_wheel();
   
-  Object * m_parent;
-  Physics * m_physics;
+  Object* m_parent;
+  Physics* m_physics;
 
   const coord m_pos;
   const vec3d m_axis_up;
@@ -67,8 +63,6 @@ private:
   // last frame stuff
   double m_last_displacement;
   bool   m_last_on_floor;
-
-  GLuint m_display_list_num;
 };
 
 #endif

@@ -298,7 +298,7 @@ void Simulator::setup_objects_from_config(){
   m_render_manager.set_terrain(main_terrain);
 
   // and add to the physics
-  m_physics.add_heightmap(main_terrain);
+  m_physics.set_heightmap(main_terrain);
 
   // set up the camera
   coord camera_pos(0, 0, 2);

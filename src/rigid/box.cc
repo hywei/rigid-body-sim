@@ -108,7 +108,7 @@ Box::Box(Physics * physics, double side_x, double side_y, double side_z, double 
                       double x = -dx + (side_x * i) / n;
                       double y = -dy + (side_y * j) / n;
                       double z = -dz + (side_z * k) / n;
-                      points.push_back(coord(x, y, z));
+                      //points.push_back(coord(x, y, z));
                   }
               }
           }

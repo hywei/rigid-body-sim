@@ -8,7 +8,7 @@ class Car;
 
 // deals with all the cars - very simple - just makes them move around
 // a bit.
-class CarAI : public Physics_controller{
+class CarAI : public PhysicsController{
 public:
   // range indicates how far away from the origin the targets are
   CarAI(double range);

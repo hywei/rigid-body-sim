@@ -1,9 +1,10 @@
 #include "wheel.hh"
 #include "object.hh"
+#include "sim_heightmap.hh"
 #include "../common/segment.hh"
-#include "../collision/sim_heightmap.hh"
 #include "../common/log_trace.hh"
 #include "../simulation/physics.hh"
+#include "../render/glut_utils.hh"
 
 using namespace std;
 
@@ -11,8 +12,8 @@ using namespace std;
 // Wheel
 Wheel::Wheel(Object * parent,
              Physics * physics,
-             const coord & pos, 
-             const vec3d & axis_up,
+             coord pos, 
+             vec3d axis_up,
              double spring,  // force per suspension offset
              double travel,  // suspension travel in each dir
              double inertia,
@@ -38,11 +39,9 @@ m_displacement(0.0),
 m_up_speed(0.0),
 m_locked(false),
 m_last_displacement(0.0),
-m_last_on_floor(false),
-m_display_list_num(0)
+m_last_on_floor(false)
 {}
 
-// get_forces
 bool Wheel::add_forces(double dt){
   TRACE_METHOD_ONLY(FRAME_1);
   vec3d force(0);
@@ -59,20 +58,17 @@ bool Wheel::add_forces(double dt){
   coord ground_pos;
   vec3d ground_normal;
 
-  const vector<SimHeightMap *> & terrains = m_physics->get_heightmaps();
+  SimHeightMap* terrain = m_physics->get_heightmap();
   
   bool hit = false;
   double frac = 1.0;
 
   m_displacement = 0.0;
 
-  for(size_t i = 0 ; i < terrains.size() ; ++i){
-    if (terrains[i]->get_segment_collision(wheel_ray, frac, ground_pos, ground_normal)){
-      hit = true;
-      wheel_ray.dir *= frac;
-    }
+  if(terrain->get_segment_collision(wheel_ray, frac, ground_pos, ground_normal)){
+    hit = true;
+    wheel_ray.dir *= frac;
   }
-
   if (hit == false){
     m_last_on_floor = false;
     return false;
@@ -180,20 +176,38 @@ void Wheel::draw_wheel(){
     double ang1 = (i + 1) * 360.0 / num_seg;
 
     if (i == (num_seg / 2))
-      GLCOLOR3(0.0f, 0.0f, 1.0f);
+      GLCOLOR3(0.0f, 0.0f, 1.0f);    
 
+    // four points: top left, bottom left, top right, bottom right
+    coord tl(m_radius * cos_deg(ang1), width2, m_radius * sin_deg(ang1));
+    coord bl(m_radius * cos_deg(ang0), width2, m_radius * sin_deg(ang0));
+    coord tr(m_radius * cos_deg(ang1), -width2, m_radius * sin_deg(ang1));
+    coord br(m_radius * cos_deg(ang0), -width2, m_radius * sin_deg(ang0));
+    
+    
     glBegin(GL_TRIANGLES);
 
     GLNORMAL3(0.0, 1.0, 0.0);
     GLVERTEX3(0.0, width2, 0.0);
-    GLVERTEX3(m_radius * cos_deg(ang1), width2, m_radius * sin_deg(ang1));
-    GLVERTEX3(m_radius * cos_deg(ang0), width2, m_radius * sin_deg(ang0));
+    GLVERTEX3(tl[0], tl[1], tl[2]);
+    GLVERTEX3(bl[0], bl[1], bl[2]);
 
     GLNORMAL3(0.0, -1.0, 0.0);
     GLVERTEX3(0.0, -width2, 0.0);
-    GLVERTEX3(m_radius * cos_deg(ang0), -width2, m_radius * sin_deg(ang0));
-    GLVERTEX3(m_radius * cos_deg(ang1), -width2, m_radius * sin_deg(ang1));
+    GLVERTEX3(br[0], br[1], br[2]);
+    GLVERTEX3(tr[0], tr[1], tr[2]);
 
+    vec3d norm = cross(br-bl, tl-bl);
+    GLNORMAL3(norm[0], norm[1], norm[2]);
+    GLVERTEX3(tl[0], tl[1], tl[2]);
+    GLVERTEX3(bl[0], bl[1], bl[2]);
+    GLVERTEX3(br[0], br[1], br[2]);
+
+    GLNORMAL3(norm[0], norm[1], norm[2]);
+    GLVERTEX3(br[0], br[1], br[2]);
+    GLVERTEX3(tr[0], tr[1], tr[2]);
+    GLVERTEX3(tl[0], tl[1], tl[2]);
+    
     glEnd();
   }
 }
@@ -208,14 +222,12 @@ void Wheel::display_object() {
   GLROTATE(m_steer_angle, 0.0, 0.0, 1.0);
   GLROTATE(m_axis_angle, 0.0, 1.0, 0.0);
 
-  if (m_display_list_num == 0){
-    m_display_list_num = glGenLists(1);
-    glNewList(m_display_list_num, GL_COMPILE);
-    draw_wheel();
-    glEndList();
-  }
+  GLuint display_list_num = glGenLists(1);
+  glNewList(display_list_num, GL_COMPILE);
+  draw_wheel();
+  glEndList();  
 
-  glCallList(m_display_list_num);
+  glCallList(display_list_num);
 }
 
 

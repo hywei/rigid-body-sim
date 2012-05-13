@@ -53,9 +53,8 @@ void detect_all_collisions(const std::vector<CollBody*>& collision_bodies,
 /// Appends the result to collisions.
 /// brute force approach for now ;-)
 /// collision_body should not be in collision_bodies
-void detect_frozen_collisions_with_body(CollBody * collision_body,
-                                        const std::vector<CollBody *> & collision_bodies,
-                                        const std::vector<SimHeightMap *>  & heightmaps,
-                                        std::vector<CollInfo> & collisions);
+void detect_frozen_collisions_with_body(
+    CollBody * body, const std::vector<CollBody*>& bodies,
+    SimHeightMap* hmap, std::vector<CollInfo>& colls);
 
 #endif

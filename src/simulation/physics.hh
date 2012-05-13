@@ -7,7 +7,7 @@
 #include <vector>
 
 class SimHeightMap;
-class Physics_controller;
+class PhysicsController;
 class RigidBody;
 
 class Physics{
@@ -22,9 +22,9 @@ public:
   void set_time_scale(double scale) {m_time_scale = scale;}
 
   void add_body(RigidBody * body);
-  void add_heightmap(SimHeightMap * heightmap);  
-  std::vector<SimHeightMap *> get_heightmaps() {return m_heightmaps;}
-  void add_controller(Physics_controller * controller);
+  void set_heightmap(SimHeightMap* hmap) {hmap_ = hmap;}
+  SimHeightMap* get_heightmap() { return hmap_; }
+  void add_controller(PhysicsController* controller);
 
   void integrate(double total_time);
 
@@ -87,8 +87,8 @@ private:
 private:
   std::vector<RigidBody*> m_rigid_bodies;
   std::vector<CollInfo> m_collisions;
-  std::vector<SimHeightMap *> m_heightmaps;
-  std::vector<Physics_controller *> m_controllers;
+  std::vector<PhysicsController *> m_controllers;
+  SimHeightMap* hmap_;
 
   struct Stored_data{
     inline Stored_data(RigidBody * rb);

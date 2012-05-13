@@ -10,7 +10,7 @@
 class Wheel;
 class Physics;
 
-class Car : public Object, public Physics_controller{
+class Car : public Object, public PhysicsController{
 public:
   Car(Physics* physics, bool fw_drive, bool rw_drive);
   ~Car();

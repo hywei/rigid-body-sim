@@ -10,17 +10,14 @@ static const double max_vel_mag = 30.0f;
 
 vec3d Physics::m_gravity(0.0f, 0.0f, -9.81f);
 
-inline Physics::Stored_data::Stored_data(RigidBody * rb)
-:
-  position(rb->get_position()),
-  orientation(rb->get_orientation()),
-  velocity(rb->get_velocity()),
-  rotation(rb->get_rotation())
-{}
+inline Physics::Stored_data::Stored_data(RigidBody* rb)
+:position(rb->get_position()),
+ orientation(rb->get_orientation()),
+ velocity(rb->get_velocity()),
+ rotation(rb->get_rotation()){}
 
 Physics::Physics(){
   TRACE_METHOD_ONLY(ONCE_1);
-
   m_timestep = 1.0f / 120;
   m_overlap_time = 0.0f;
   m_num_collision_iterations = 5;
@@ -36,17 +33,11 @@ void Physics::add_body(RigidBody * body){
   m_rigid_bodies.push_back(body);
 }
 
-void Physics::add_heightmap(SimHeightMap * heightmap){
-  m_heightmaps.push_back(heightmap);
-}
-
-
 // add_controller
-void Physics::add_controller(Physics_controller* controller){
+void Physics::add_controller(PhysicsController* controller){
   m_controllers.push_back(controller);
 }
 
-// activate_object
 // activate object and bring it into the collision list/do collision detection
 void Physics::activate_object(RigidBody * body){
   if ( (body->get_activity_state() == RigidBody::ACTIVE) ||
@@ -58,13 +49,12 @@ void Physics::activate_object(RigidBody * body){
   if (!body->collision_body()) return;
 
   ::detect_frozen_collisions_with_body(body->collision_body(),
-                                       m_collision_bodies, m_heightmaps, m_collisions);
+                                       m_collision_bodies, hmap_, m_collisions);
   m_collision_bodies.push_back(body->collision_body());
 
   // now check that any adjacent touching bodies wouldn't accelerate towards us if we moved away
   int new_num = m_collisions.size();
   for (int i = orig_num ; i < new_num ; ++i){
-    // must be a body-body interaction to be interesting
     if (m_collisions[i].body1){
       RigidBody * other_body = m_collisions[i].body0->rigid_body();
       // the collision normal pointing from body to other_body
@@ -86,9 +76,9 @@ void Physics::activate_object(RigidBody * body){
 }
 
 // preprocess_collision
-inline void Physics::preprocess_collision(CollInfo & collision, double dt){
-  RigidBody * body0 = collision.body0->rigid_body();
-  RigidBody * body1 = 0;
+inline void Physics::preprocess_collision(CollInfo& collision, double dt){
+  RigidBody* body0 = collision.body0->rigid_body();
+  RigidBody* body1 = 0;
 
   if (collision.body1){
     body1 = collision.body1->rigid_body();
@@ -119,7 +109,7 @@ inline void Physics::preprocess_collision(CollInfo & collision, double dt){
     collision.static_friction = 0.5f * (body0->static_friction() + collision.heightmap->static_friction());
     collision.dynamic_friction = 0.5f * (body0->dynamic_friction() + collision.heightmap->dynamic_friction());
     collision.denominator = body0->get_inv_mass() + 
-      dot(N, cross(body0->get_world_inv_inertia() * (cross(collision.R0, N)), collision.R0));
+                            dot(N, cross(body0->get_world_inv_inertia() * (cross(collision.R0, N)), collision.R0));
   }
 }
 
@@ -273,7 +263,7 @@ void Physics::detect_all_collisions(double dt) {
     }
     
   }
-  ::detect_all_collisions(m_collision_bodies, m_heightmaps[0], m_collisions);
+  ::detect_all_collisions(m_collision_bodies, hmap_, m_collisions);
 }
 
 
@@ -295,10 +285,9 @@ void Physics::handle_all_collisions(double dt){
 
   // 10.0 detect collisions and handle using inelastic collisions
 
-  int num_bodies = m_rigid_bodies.size();
   // step 1
-  m_stored_data.resize(num_bodies);
-  for (int i = 0 ; i < num_bodies ; ++i){
+  m_stored_data.resize(m_rigid_bodies.size());
+  for (size_t i=0; i<m_rigid_bodies.size(); ++i){
     m_stored_data[i] = Stored_data(m_rigid_bodies[i]);
   }
 
@@ -310,7 +299,7 @@ void Physics::handle_all_collisions(double dt){
   detect_all_collisions(dt);
   int orig_num_collisions = m_collisions.size();
   // step 5
-  for(int i = 0 ; i < num_bodies ; ++i){
+  for(int i = 0 ; i < m_rigid_bodies.size(); ++i){
     m_rigid_bodies[i]->set_velocity(m_stored_data[i].velocity);
     m_rigid_bodies[i]->set_rotation(m_stored_data[i].rotation);
   }
@@ -320,7 +309,7 @@ void Physics::handle_all_collisions(double dt){
   }
 
   // iterate over the collisions
-  for (int step = 0 ; step < m_num_collision_iterations ; ++step){
+  for (int step=0 ; step<m_num_collision_iterations ; ++step){
     bool got_one = false;
     // step 6
     int i_start, i_end, i_dir;
@@ -358,7 +347,7 @@ void Physics::handle_all_collisions(double dt){
     if (!got_one) break;
   }
   // step 7
-  for(int i = 0 ; i < num_bodies ; ++i){
+  for(int i = 0 ; i < m_rigid_bodies.size(); ++i){
     m_rigid_bodies[i]->set_position(m_stored_data[i].position);
     m_rigid_bodies[i]->set_orientation(m_stored_data[i].orientation);
   }
@@ -429,7 +418,6 @@ void Physics::get_all_external_forces(double dt){
   }
 }
 
-// update_all_velocities
 void Physics::update_all_velocities(double dt){
   TRACE_METHOD_ONLY(MULTI_FRAME_1);
   for (size_t i = 0 ; i < m_rigid_bodies.size() ; ++i){
@@ -437,7 +425,6 @@ void Physics::update_all_velocities(double dt){
   }
 }
  
-// clear_all_forces
 void Physics::clear_all_forces(){
   TRACE_METHOD_ONLY(MULTI_FRAME_1);
   for (size_t i = 0 ; i < m_rigid_bodies.size() ; ++i){
@@ -445,15 +432,12 @@ void Physics::clear_all_forces(){
   }
 }
 
-
-// update_all_positions
 void Physics::update_all_positions(double dt){
   TRACE_METHOD_ONLY(MULTI_FRAME_1);
   for (size_t i = 0 ; i < m_rigid_bodies.size(); ++i) {    
     m_rigid_bodies[i]->update_position(dt);
   }
 }
-
 
 // try_to_freeze_all_objects
 void Physics::try_to_freeze_all_objects(double dt){
@@ -462,7 +446,6 @@ void Physics::try_to_freeze_all_objects(double dt){
     m_rigid_bodies[i]->try_to_freeze(dt);
   }
 }
-
 
 // activate_all_frozen_objects_left_hanging
 void Physics::activate_all_frozen_objects_left_hanging(){
@@ -498,7 +481,6 @@ void Physics::activate_all_frozen_objects_left_hanging(){
 }
 
 
-// do_timestep
 void Physics::do_timestep(double dt){
   TRACE_METHOD_ONLY(MULTI_FRAME_1);
   get_all_external_forces(dt);
@@ -531,7 +513,6 @@ void Physics::integrate(double dt){
     do_timestep(timestep);
   }
 }
-
 
 // enable_freezing
 void Physics::enable_freezing(bool freeze){

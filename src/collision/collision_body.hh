@@ -110,6 +110,7 @@ private:
 inline void CollBody::getBoundingSphere(coord& pos, double& radius) const{
   pos = pos_;
   radius = body_mesh_.getBoundingRadius();
+  printf("%lf %lf %lf %lf", pos[0], pos[1], pos[2], radius);
 }
 
 #endif

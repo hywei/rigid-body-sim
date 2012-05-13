@@ -166,67 +166,35 @@ void detect_all_collisions(const vector<CollBody*>& bodies,
   }
 }
 
-// detect_collisions_with_body
-void detect_frozen_collisions_with_body(CollBody * collision_body,
-                                        const std::vector<CollBody *> & collision_bodies,
-                                        const std::vector<SimHeightMap *>  & heightmaps,
-                                        std::vector<CollInfo> & collisions){
-  if (collision_body->rigid_body()->get_immovable())
-    return;
-
-  int num_bodies = collision_bodies.size();
-  int num_heightmaps = heightmaps.size(); 
+void detect_frozen_collisions_with_body(
+    CollBody* body0, const vector<CollBody*>& bodies,
+    SimHeightMap* hmap, vector<CollInfo>& colls) {
   
-  collision_body->calculateWorldProperties();
-
-  // heightmaps first
-  for (int j = 0 ; j < num_heightmaps ; ++j){
-    detect_heightmap_collision(collision_body,
-                               heightmaps[j], collisions);
-  }
+  if(body0->rigid_body()->get_immovable()) return;
+  body0->calculateWorldProperties();
+  detect_heightmap_collision(body0, hmap, colls);
   
-  // body-body Note the world properties are already calculated
-  coord pos0, pos1;
-  double r0, r1;
-
-  collision_body->getBoundingSphere(pos0, r0);
-
-  for(int j = 0 ; j < num_bodies ; ++j){
-    if (collision_bodies[j]->rigid_body() != collision_body->rigid_body()){
-      if ( (collision_bodies[j]->rigid_body()->get_activity_state() == RigidBody::FROZEN ) ||
-           (!collision_bodies[j]->rigid_body()->get_immovable()) ){
-        // both bodies should be in each others lists... so just check one
-        collision_bodies[j]->getBoundingSphere(pos1, r1);
-        if ((pos1 - pos0).mag2() < ((r0 + r1) * (r0 + r1))){
-          // only continue if the bounding sphere of one intersects 
-          // the bounding box of the other
-          const coord posi_in_bodyj_frame = 
-              collision_bodies[j]->getInvOrientation() * 
-              (pos0 - collision_bodies[j]->getPosition());
-        
-          double sqr_dist_bodyi_to_bodyj_box = 
-              collision_bodies[j]->getSqrDist2BoundingBox(
-                  posi_in_bodyj_frame);
-        
-          if (sqr_dist_bodyi_to_bodyj_box < (r0 * r0)){
-            const coord posj_in_bodyi_frame = 
-                collision_body->getInvOrientation() * 
-                (pos1 - collision_body->getPosition());
-          
-            double sqr_dist_bodyj_to_bodyi_box = 
-                collision_body->getSqrDist2BoundingBox(
-                    posj_in_bodyi_frame);
-          
-            if (sqr_dist_bodyj_to_bodyi_box < (r1 * r1)){
-              detect_body_collision(collision_body, 
-                                    collision_bodies[j], collisions);
-              detect_body_collision(collision_bodies[j], 
-                                    collision_body, collisions);
-            }
-          }
-        }
+  coord c0, ci;
+  double r0, ri;
+  body0->getBoundingSphere(c0, r0);
+  for(size_t i=0; i<bodies.size(); ++i) {
+    if(bodies[i] == body0) continue;
+    RigidBody* rb = bodies[i]->rigid_body();
+    if((rb->get_activity_state() == RigidBody::FROZEN)
+       || (!rb->get_immovable())) {
+      bodies[i]->getBoundingSphere(ci, ri);
+      if((ci-c0).mag2() < (r0+ri)*(r0+ri)) {
+        coord pi = bodies[i]->getPosition();
+        coord p_0i = bodies[i]->getInvOrientation()*(c0 - pi);
+        double dist_0i = bodies[i]->getSqrDist2BoundingBox(p_0i);
+        if(dist_0i >= r0*r0) continue;
+        coord p_i0 = body0->getInvOrientation() * (ci - body0->getPosition());
+        double dist_i0 = body0->getSqrDist2BoundingBox(p_i0);
+        if(dist_i0 >= ri*ri) continue;
+        detect_body_collision(body0, bodies[i], colls);
+        detect_body_collision(bodies[i], body0, colls);
       }
     }
-    
+       
   }
 }

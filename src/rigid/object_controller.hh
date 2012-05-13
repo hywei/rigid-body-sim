@@ -8,7 +8,7 @@ class Object;
 class Physics;
 
 /// constantly tries to set the velocity of an object
-class ObjectController : public Physics_controller{
+class ObjectController : public PhysicsController{
 public:
   // needs to be told the physics system
   ObjectController(Physics * physics);
